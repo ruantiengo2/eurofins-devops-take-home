@@ -1,12 +1,26 @@
+using System.Net;
+using Microsoft.AspNetCore.Mvc.Testing;
+
 namespace HelloWorldApi.Tests;
 
-public class EndpointTests
+public class EndpointTests(WebApplicationFactory<Program> factory)
+    : IClassFixture<WebApplicationFactory<Program>>
 {
-    [Theory(Skip = "Endpoint assertions will be implemented in the next commit.")]
+    [Theory]
     [InlineData("/", "Hello World!")]
     [InlineData("/health", "Healthy")]
-    public void Get_ReturnsExpectedResponse(string path, string expectedBody)
+    public async Task Get_ReturnsExpectedResponse(string path, string expectedBody)
     {
-        throw new NotImplementedException();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false
+        });
+
+        using var response = await client.GetAsync(path);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(expectedBody, await response.Content.ReadAsStringAsync());
     }
 }
