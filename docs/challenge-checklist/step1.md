@@ -15,7 +15,7 @@
 - [ ] Create a CI pipeline using GitHub Actions.
 - [ ] Configure the pipeline to trigger automatically on repository changes.
 - [ ] Configure the pipeline to run on every push to the target branch.
-- [ ] Restore application dependencies.
+- [x] Restore application dependencies.
 - [ ] Build the application.
 - [ ] Generate the application package.
 - [ ] Store the generated package as a pipeline artifact.
