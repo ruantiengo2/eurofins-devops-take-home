@@ -19,3 +19,6 @@ app.MapGet("/", () => "Hello World!");
 app.MapHealthChecks("/health");
 
 app.Run();
+
+// Expose the entry point to the integration test host.
+public partial class Program { }
