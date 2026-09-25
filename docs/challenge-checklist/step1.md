@@ -2,10 +2,11 @@
 
 ## Application
 
-- [ ] Create a simple .NET Core web application.
-- [ ] Ensure the application builds successfully.
-- [ ] Ensure the application runs successfully.
-- [ ] Store the application source code in Git.
+- [x] Create a simple .NET Core web application.
+- [x] Ensure the application builds successfully.
+- [x] Ensure the application runs successfully.
+- [x] Store the application source code in Git.
+- [ ] Create health and hello world route
 - [ ] Push the repository to a remote version control platform.
 
 ## CI/CD
