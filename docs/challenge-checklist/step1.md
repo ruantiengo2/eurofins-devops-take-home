@@ -7,7 +7,7 @@
 - [x] Ensure the application runs successfully.
 - [x] Store the application source code in Git.
 - [x] Create health and hello world routes.
-- [ ] Create unit tests for the new routes.
+- [x] Create unit tests for the new routes.
 - [ ] Push the repository to a remote version control platform.
 
 ## CI/CD
