@@ -26,3 +26,6 @@ jobs:
 
       - name: Build application
         run: dotnet build HelloWorldApi.slnx --configuration Release --no-restore
+
+      - name: Publish application package
+        run: dotnet publish src/HelloWorldApi/HelloWorldApi.csproj --configuration Release --no-build --output artifacts/HelloWorldApi

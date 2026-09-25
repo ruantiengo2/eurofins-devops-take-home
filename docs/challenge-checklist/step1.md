@@ -17,7 +17,7 @@
 - [ ] Configure the pipeline to run on every push to the target branch.
 - [x] Restore application dependencies.
 - [x] Build the application.
-- [ ] Generate the application package.
+- [x] Generate the application package.
 - [ ] Store the generated package as a pipeline artifact.
 - [ ] Ensure the package is rebuilt on every committed change.
 - [ ] Ensure the pipeline fails when the build fails.
