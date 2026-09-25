@@ -6,7 +6,8 @@
 - [x] Ensure the application builds successfully.
 - [x] Ensure the application runs successfully.
 - [x] Store the application source code in Git.
-- [ ] Create health and hello world route
+- [x] Create health and hello world routes.
+- [ ] Create unit tests for the new routes.
 - [ ] Push the repository to a remote version control platform.
 
 ## CI/CD
