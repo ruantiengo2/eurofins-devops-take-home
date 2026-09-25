@@ -16,7 +16,7 @@
 - [ ] Configure the pipeline to trigger automatically on repository changes.
 - [ ] Configure the pipeline to run on every push to the target branch.
 - [x] Restore application dependencies.
-- [ ] Build the application.
+- [x] Build the application.
 - [ ] Generate the application package.
 - [ ] Store the generated package as a pipeline artifact.
 - [ ] Ensure the package is rebuilt on every committed change.

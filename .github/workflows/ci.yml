@@ -23,3 +23,6 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore HelloWorldApi.slnx
+
+      - name: Build application
+        run: dotnet build HelloWorldApi.slnx --configuration Release --no-restore
