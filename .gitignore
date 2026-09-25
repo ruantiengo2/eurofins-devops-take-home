@@ -1,0 +1,30 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+TestResults/
+
+# Visual Studio and IDE files
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+secrets.json
+secrets.*.json
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# macOS
+.DS_Store
