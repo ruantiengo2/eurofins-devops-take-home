@@ -13,8 +13,8 @@
 ## CI/CD
 
 - [ ] Create a CI pipeline using GitHub Actions.
-- [ ] Configure the pipeline to trigger automatically on repository changes.
-- [ ] Configure the pipeline to run on every push to the target branch.
+- [x] Configure the pipeline to trigger automatically on repository changes.
+- [x] Configure the pipeline to run on every push to the target branch.
 - [x] Restore application dependencies.
 - [x] Build the application.
 - [x] Generate the application package.
