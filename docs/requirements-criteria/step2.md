@@ -17,7 +17,7 @@
 
 - [x] Create an IIS website.
 - [x] Add an HTTPS binding with a certificate.
-- [ ] Create an application pool and configure it to run as the specified user.
+- [x] Create an application pool and configure it to run as the specified user.
 - [ ] Set a custom directory for the website logs.
 - [ ] Create an application under the website.
 - [ ] Assign the application to the created application pool.

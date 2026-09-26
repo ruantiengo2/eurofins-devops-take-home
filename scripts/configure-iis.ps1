@@ -3,7 +3,10 @@
 
 param(
     [Parameter(Mandatory = $true)]
-    [string]$DeploymentDir
+    [string]$DeploymentDir,
+
+    [Parameter(Mandatory = $true)]
+    [System.Management.Automation.PSCredential]$Credential
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,12 +18,29 @@ if ($env:OS -ne 'Windows_NT') {
 Import-Module WebAdministration -ErrorAction Stop
 
 $siteName = 'HelloWorldApi'
+$appPoolName = 'HelloWorldApiPool'
 $httpPort = 8080
 $httpsPort = 8443
 $certificateName = 'HelloWorldApi localhost development'
 
 if (-not (Test-Path -LiteralPath $DeploymentDir -PathType Container)) {
     throw "Deployment directory not found: $DeploymentDir"
+}
+
+# Create or update the pool using the account supplied by the deployment script.
+$appPoolPath = "IIS:\AppPools\$appPoolName"
+if (-not (Test-Path $appPoolPath)) {
+    New-WebAppPool -Name $appPoolName | Out-Null
+}
+
+# ASP.NET Core uses its own runtime (No Managed Code in IIS Manager).
+Set-ItemProperty -Path $appPoolPath -Name managedRuntimeVersion -Value ''
+
+# Identity type 3 means SpecificUser. IIS needs the password to configure it.
+Set-ItemProperty -Path $appPoolPath -Name processModel -Value @{
+    identityType = 3
+    userName = $Credential.UserName
+    password = $Credential.GetNetworkCredential().Password
 }
 
 # Reuse the existing site when running the script again.

@@ -53,7 +53,7 @@ if (-not $user.Enabled) {
     throw "Local user '$userName' is disabled. Use an enabled account."
 }
 
-# Keep the password in memory for the application pool configuration added later.
+# Pass the credential in memory to the IIS configuration script.
 $password = Read-Host "Password for $env:COMPUTERNAME\$userName" -AsSecureString
 $credential = [System.Management.Automation.PSCredential]::new(
     "$env:COMPUTERNAME\$userName", $password
@@ -79,4 +79,4 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Application files extracted to $deploymentDir"
 
-& (Join-Path $PSScriptRoot 'configure-iis.ps1') -DeploymentDir $deploymentDir
+& (Join-Path $PSScriptRoot 'configure-iis.ps1') -DeploymentDir $deploymentDir -Credential $credential
