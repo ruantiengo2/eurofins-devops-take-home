@@ -19,8 +19,8 @@
 - [x] Add an HTTPS binding with a certificate.
 - [x] Create an application pool and configure it to run as the specified user.
 - [x] Set a custom directory for the website logs.
-- [ ] Create an application under the website.
-- [ ] Assign the application to the created application pool.
+- [x] Create an application under the website.
+- [x] Assign the application to the created application pool.
 
 ## Quality and validation
 

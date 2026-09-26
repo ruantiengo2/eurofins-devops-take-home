@@ -18,6 +18,8 @@ if ($env:OS -ne 'Windows_NT') {
 Import-Module WebAdministration -ErrorAction Stop
 
 $siteName = 'HelloWorldApi'
+$siteRoot = 'C:\inetpub\HelloWorldApiSite'
+$applicationName = 'api'
 $appPoolName = 'HelloWorldApiPool'
 $logDir = 'C:\inetpub\logs\HelloWorldApi'
 $httpPort = 8080
@@ -44,11 +46,21 @@ Set-ItemProperty -Path $appPoolPath -Name processModel -Value @{
     password = $Credential.GetNetworkCredential().Password
 }
 
-# Reuse the existing site when running the script again.
+# Keep the website root separate from the ASP.NET Core application files.
+New-Item -Path $siteRoot -ItemType Directory -Force | Out-Null
 if (-not (Test-Path "IIS:\Sites\$siteName")) {
-    New-Website -Name $siteName -Port $httpPort -PhysicalPath $DeploymentDir
+    New-Website -Name $siteName -Port $httpPort -PhysicalPath $siteRoot
 } else {
-    Write-Host "Website '$siteName' already exists. Keeping its current configuration."
+    Set-ItemProperty -Path "IIS:\Sites\$siteName" -Name physicalPath -Value $siteRoot
+}
+
+# Host the API under /api using its own application pool.
+$applicationPath = "IIS:\Sites\$siteName\$applicationName"
+if (-not (Get-WebApplication -Site $siteName -Name $applicationName)) {
+    New-WebApplication -Site $siteName -Name $applicationName -PhysicalPath $DeploymentDir -ApplicationPool $appPoolName | Out-Null
+} else {
+    Set-ItemProperty -Path $applicationPath -Name physicalPath -Value $DeploymentDir
+    Set-ItemProperty -Path $applicationPath -Name applicationPool -Value $appPoolName
 }
 
 # Store IIS request logs outside the application directory.
@@ -80,5 +92,5 @@ if (-not $binding.certificateHash) {
     $binding.AddSslCertificate($certificate.Thumbprint, 'My')
 }
 
-Write-Host "IIS site configured: https://localhost:$httpsPort"
+Write-Host "IIS application configured: https://localhost:$httpsPort/$applicationName/"
 Write-Host 'The generated certificate is for local testing and is not automatically trusted by browsers.'
