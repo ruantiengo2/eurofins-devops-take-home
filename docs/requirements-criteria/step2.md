@@ -8,15 +8,15 @@
 
 ## User and permissions
 
-- [ ] Create a local group.
-- [ ] Add the specified user to the local group.
-- [ ] Grant the permissions needed to access the application files.
-- [ ] Handle the user's password without storing it in source control.
+- [x] Create a local group.
+- [x] Add the specified user to the local group.
+- [x] Grant the permissions needed to access the application files.
+- [x] Handle the user's password without storing it in source control.
 
 ## IIS configuration
 
-- [ ] Create an IIS website.
-- [ ] Add an HTTPS binding with a certificate.
+- [x] Create an IIS website.
+- [x] Add an HTTPS binding with a certificate.
 - [ ] Create an application pool and configure it to run as the specified user.
 - [ ] Set a custom directory for the website logs.
 - [ ] Create an application under the website.

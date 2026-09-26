@@ -1,5 +1,5 @@
-#!/usr/bin/env pwsh
 #Requires -RunAsAdministrator
+#Requires -PSEdition Desktop
 
 $ErrorActionPreference = 'Stop'
 
@@ -10,6 +10,8 @@ if ($env:OS -ne 'Windows_NT') {
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $packagePath = Join-Path $repoRoot 'artifacts/HelloWorldApi.zip'
 $deploymentDir = 'C:\inetpub\HelloWorldApi'
+$groupName = 'HelloWorldApiUsers'
+$userName = 'HelloWorldUser' # Existing local account on the Windows server.
 
 # Check IIS and its PowerShell management tools.
 if (-not (Get-Service -Name W3SVC -ErrorAction SilentlyContinue)) {
@@ -41,6 +43,40 @@ if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
     throw "Application package not found: $packagePath"
 }
 
+# Check the account before changing files or permissions.
+Import-Module Microsoft.PowerShell.LocalAccounts -ErrorAction Stop
+$user = Get-LocalUser -Name $userName -ErrorAction SilentlyContinue
+if (-not $user) {
+    throw "Local user '$userName' does not exist. Set userName to an existing local account."
+}
+if (-not $user.Enabled) {
+    throw "Local user '$userName' is disabled. Use an enabled account."
+}
+
+# Keep the password in memory for the application pool configuration added later.
+$password = Read-Host "Password for $env:COMPUTERNAME\$userName" -AsSecureString
+$credential = [System.Management.Automation.PSCredential]::new(
+    "$env:COMPUTERNAME\$userName", $password
+)
+
 Expand-Archive -LiteralPath $packagePath -DestinationPath $deploymentDir -Force
 
+# Reuse the group if it already exists.
+$group = Get-LocalGroup -Name $groupName -ErrorAction SilentlyContinue
+if (-not $group) {
+    $group = New-LocalGroup -Name $groupName -Description 'Read and execute access to HelloWorldApi'
+}
+
+$members = Get-LocalGroupMember -Group $groupName
+if ($user.SID.Value -notin $members.SID.Value) {
+    Add-LocalGroupMember -Group $groupName -Member $user
+}
+
+# RX = read and execute; OI/CI = inherit on files and subdirectories.
+$permission = "*$($group.SID.Value):(OI)(CI)(RX)"
+icacls.exe $deploymentDir /grant:r $permission /T
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Write-Host "Application files extracted to $deploymentDir"
+
+& (Join-Path $PSScriptRoot 'configure-iis.ps1') -DeploymentDir $deploymentDir
