@@ -8,7 +8,7 @@
 - [x] Store the application source code in Git.
 - [x] Create health and hello world routes.
 - [x] Create unit tests for the new routes.
-- [ ] Push the repository to a remote version control platform.
+- [x] Push the repository to a remote version control platform.
 
 ## CI/CD
 
