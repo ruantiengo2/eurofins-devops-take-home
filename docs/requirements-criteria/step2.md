@@ -2,7 +2,7 @@
 
 ## Deployment script
 
-- [ ] Create a PowerShell script to deploy the application from Step 1.
+- [x] Create a PowerShell script to deploy the application from Step 1.
 - [ ] Accept parameters for the package path, site, application, application pool, user, group, log directory, and certificate.
 - [ ] Check that IIS and the ASP.NET Core Hosting Bundle are installed.
 - [ ] Extract the application package to the deployment directory.
