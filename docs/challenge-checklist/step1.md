@@ -7,7 +7,7 @@
 - [x] Ensure the application runs successfully.
 - [x] Store the application source code in Git.
 - [x] Create health and hello world routes.
-- [x] Create unit tests for the new routes.
+- [x] Create integration tests for the routes.
 - [x] Push the repository to a remote version control platform.
 
 ## CI/CD
@@ -22,3 +22,11 @@
 - [x] Ensure the package is rebuilt on every committed change.
 - [x] Ensure the pipeline fails when the build fails.
 - [ ] Verify that the pipeline runs successfully from start to finish.
+
+## Quality and validation
+
+- [ ] Run automated tests in the CI pipeline before publishing.
+- [ ] Ensure the pipeline fails when any test fails.
+- [ ] Document how to run, test, and build the application locally.
+- [ ] Document the API endpoints and how to download the generated package.
+- [ ] Verify that the generated ZIP contains the files required for deployment.
