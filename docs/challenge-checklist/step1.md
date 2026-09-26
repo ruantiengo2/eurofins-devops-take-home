@@ -25,8 +25,8 @@
 
 ## Quality and validation
 
-- [ ] Run automated tests in the CI pipeline before publishing.
-- [ ] Ensure the pipeline fails when any test fails.
+- [x] Run automated tests in the CI pipeline before publishing.
+- [x] Ensure the pipeline fails when any test fails.
 - [ ] Document how to run, test, and build the application locally.
 - [ ] Document the API endpoints and how to download the generated package.
 - [ ] Verify that the generated ZIP contains the files required for deployment.
