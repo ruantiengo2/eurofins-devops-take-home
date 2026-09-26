@@ -29,3 +29,10 @@ jobs:
 
       - name: Publish application package
         run: dotnet publish src/HelloWorldApi/HelloWorldApi.csproj --configuration Release --no-build --output artifacts/HelloWorldApi
+
+      - name: Upload application package
+        uses: actions/upload-artifact@v7
+        with:
+          name: HelloWorldApi
+          path: artifacts/HelloWorldApi/
+          if-no-files-found: error
