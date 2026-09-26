@@ -19,6 +19,7 @@ Import-Module WebAdministration -ErrorAction Stop
 
 $siteName = 'HelloWorldApi'
 $appPoolName = 'HelloWorldApiPool'
+$logDir = 'C:\inetpub\logs\HelloWorldApi'
 $httpPort = 8080
 $httpsPort = 8443
 $certificateName = 'HelloWorldApi localhost development'
@@ -49,6 +50,11 @@ if (-not (Test-Path "IIS:\Sites\$siteName")) {
 } else {
     Write-Host "Website '$siteName' already exists. Keeping its current configuration."
 }
+
+# Store IIS request logs outside the application directory.
+New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+Set-ItemProperty -Path "IIS:\Sites\$siteName" -Name logFile.directory -Value $logDir
+Set-ItemProperty -Path "IIS:\Sites\$siteName" -Name logFile.enabled -Value $true
 
 # Use localhost and SNI so this certificate binding belongs to this hostname.
 $binding = Get-WebBinding -Name $siteName -Protocol https -Port $httpsPort -HostHeader 'localhost'
