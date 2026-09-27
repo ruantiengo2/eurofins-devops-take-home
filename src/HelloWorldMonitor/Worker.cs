@@ -2,6 +2,8 @@ namespace HelloWorldMonitor;
 
 public class Worker(HttpClient client, Uri endpoint, ILogger<Worker> logger) : BackgroundService
 {
+    private readonly string logPath = Path.Combine(AppContext.BaseDirectory, "status.log");
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(60));
@@ -26,6 +28,9 @@ public class Worker(HttpClient client, Uri endpoint, ILogger<Worker> logger) : B
         try
         {
             using var response = await client.GetAsync(endpoint, cancellationToken);
+            var entry = $"{DateTimeOffset.Now:O} {endpoint}: HTTP {(int)response.StatusCode} {response.ReasonPhrase}";
+            await File.AppendAllTextAsync(logPath, entry + Environment.NewLine, cancellationToken);
+
             logger.LogInformation("{Url}: HTTP {StatusCode} {Message}",
                 endpoint, (int)response.StatusCode, response.ReasonPhrase);
         }

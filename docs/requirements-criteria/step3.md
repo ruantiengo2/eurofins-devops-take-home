@@ -8,10 +8,10 @@
 
 ## Status logging
 
-- [ ] Write the HTTP status code and message from each check to a text or log file.
-- [ ] Store the log file in the same directory as the executable.
-- [ ] Append new results without overwriting previous entries.
-- [ ] Include the date and time of each check.
+- [x] Write the HTTP status code and message from each check to a log file.
+- [x] Store the log file in the same directory as the executable.
+- [x] Append new results without overwriting previous entries.
+- [x] Include the date and time of each check.
 
 ## Stop behavior
 
@@ -24,5 +24,5 @@
 - [ ] Verify from the IDE that HTTP 200 results are logged every 60 seconds.
 - [ ] Verify from the IDE that a non-200 response is logged and stops the monitoring service.
 - [ ] Verify that connection errors or timeouts are logged and stop the monitoring service.
-- [ ] Verify that the log is created beside the executable, regardless of the working directory.
+- [x] Verify that the log is created beside the executable, regardless of the working directory.
 - [ ] Document the monitored URL, log location, and how to run the application locally.
