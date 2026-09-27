@@ -23,6 +23,8 @@
 
 - [ ] Verify from the IDE that HTTP 200 results are logged every 60 seconds.
 - [ ] Verify from the IDE that a non-200 response is logged and stops the monitoring service.
-- [ ] Verify that connection errors or timeouts are logged and stop the monitoring service.
+- [x] Verify that connection errors or timeouts are logged and stop the monitoring service.
 - [x] Verify that the log is created beside the executable, regardless of the working directory.
-- [ ] Document the monitored URL, log location, and how to run the application locally.
+- [x] Document the monitored URL, log location, and how to run the application locally.
+
+Local console validation (`dotnet run`) confirmed HTTP 200 log entries 60 seconds apart, and logging followed by exit code 1 for HTTP 404, connection refusal, and timeout. The two IDE checks above and execution as an installed Windows service remain pending.
