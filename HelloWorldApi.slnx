@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/HelloWorldApi/HelloWorldApi.csproj" />
+    <Project Path="src/HelloWorldMonitor/HelloWorldMonitor.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/HelloWorldApi.Tests/HelloWorldApi.Tests.csproj" />
