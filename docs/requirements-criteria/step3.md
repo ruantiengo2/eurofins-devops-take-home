@@ -15,9 +15,9 @@
 
 ## Stop behavior
 
-- [ ] Stop the monitoring service when the HTTP status code is different from 200 OK.
-- [ ] Write the non-200 result to the log before stopping.
-- [ ] Log connection errors or timeouts and stop the monitoring service when no HTTP response is received.
+- [x] Stop the monitoring service when the HTTP status code is different from 200 OK.
+- [x] Write the non-200 result to the log before stopping.
+- [x] Log connection errors or timeouts and stop the monitoring service when no HTTP response is received.
 
 ## Quality and validation
 
