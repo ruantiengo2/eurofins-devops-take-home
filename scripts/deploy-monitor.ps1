@@ -4,7 +4,9 @@ param(
     [string]$PublishDir = (Join-Path (Split-Path -Parent $PSScriptRoot) 'artifacts/HelloWorldMonitor/win-x64'),
     [string]$DeploymentDir = (Join-Path $env:ProgramFiles 'HelloWorldMonitor'),
     [Parameter(Mandatory = $true)]
-    [uri]$MonitorUrl
+    [uri]$MonitorUrl,
+    [Parameter(Mandatory = $true)]
+    [System.Management.Automation.PSCredential]$Credential
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,16 +40,48 @@ if ((Test-Path -LiteralPath $DeploymentDir) -and @(Get-ChildItem -LiteralPath $D
     throw 'DeploymentDir must be empty for this initial installation. Existing files were not changed.'
 }
 
+# Resolve the account before changing files or policy; use its SID for ACLs.
+$accountName = $Credential.UserName
+if ($accountName.StartsWith('.\')) { $accountName = "$env:COMPUTERNAME\$($accountName.Substring(2))" }
+elseif ($accountName -notmatch '[\\@]') { $accountName = "$env:COMPUTERNAME\$accountName" }
+$account = New-Object System.Security.Principal.NTAccount($accountName)
+$sid = $account.Translate([System.Security.Principal.SecurityIdentifier])
+$accountName = $sid.Translate([System.Security.Principal.NTAccount]).Value
+$serviceCredential = [System.Management.Automation.PSCredential]::new($accountName, $Credential.Password)
+if (-not ('ServiceLogonRight' -as [type])) { Add-Type -Path (Join-Path $PSScriptRoot 'ServiceLogonRight.cs') }
+[ServiceLogonRight]::Grant($sid.Value)
+
 New-Item -Path $DeploymentDir -ItemType Directory -Force | Out-Null
 Get-ChildItem -LiteralPath $PublishDir -Force | Copy-Item -Destination $DeploymentDir -Recurse
+
+# Protect application binaries from modification by the service account.
+# This is a new, empty deployment directory, not an existing shared directory.
+$acl = New-Object System.Security.AccessControl.DirectorySecurity
+$acl.SetAccessRuleProtection($true, $false)
+$inheritance = [System.Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
+foreach ($adminSid in @('S-1-5-18', 'S-1-5-32-544')) {
+    $identity = New-Object System.Security.Principal.SecurityIdentifier($adminSid)
+    $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($identity, 'FullControl', $inheritance, 'None', 'Allow'))
+}
+$acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($sid, 'ReadAndExecute', $inheritance, 'None', 'Allow'))
+Set-Acl -LiteralPath $DeploymentDir -AclObject $acl
+# Pre-create the log: only this file needs write access, not the executable folder.
+$logPath = Join-Path $DeploymentDir 'status.log'
+if (-not (Test-Path -LiteralPath $logPath)) { New-Item -Path $logPath -ItemType File | Out-Null }
+$logAcl = Get-Acl -LiteralPath $logPath
+$logAcl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($sid, 'Modify', 'Allow'))
+Set-Acl -LiteralPath $logPath -AclObject $logAcl
+# Register the logger source while elevated, before the unprivileged service uses it.
+if (-not [Diagnostics.EventLog]::SourceExists('HelloWorldMonitor')) {
+    New-EventLog -LogName Application -Source 'HelloWorldMonitor'
+}
 $executable = Join-Path $DeploymentDir 'HelloWorldMonitor.exe'
 if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw "Deployed executable not found: $executable" }
 # Quote both paths and URLs; the service runs the Windows apphost, not dotnet.exe.
 $binaryPath = '"{0}" --Monitor:Url "{1}"' -f $executable, $MonitorUrl.AbsoluteUri
 
-# This initial deployment uses the Windows default LocalSystem account.
-# A specified account and recovery policy are separate Step 4 tasks.
-New-Service -Name $serviceName -DisplayName $serviceName -BinaryPathName $binaryPath -StartupType Automatic -Description 'Checks the HelloWorld website every 60 seconds.' | Out-Null
+# The password remains in PSCredential; Windows stores the service credential.
+New-Service -Name $serviceName -DisplayName $serviceName -BinaryPathName $binaryPath -StartupType Automatic -Credential $serviceCredential -Description 'Checks the HelloWorld website every 60 seconds.' | Out-Null
 try {
     Start-Service -Name $serviceName
     (Get-Service -Name $serviceName).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))
