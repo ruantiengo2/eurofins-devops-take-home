@@ -58,4 +58,35 @@ To check the behavior:
 
 Redirects are not followed: only HTTP 200 keeps the monitor running. For the IIS HTTPS endpoint, use `https://localhost:8443/api/` with a certificate trusted by the machine running the monitor.
 
-Console behavior has been checked locally. IDE debugging and execution as an installed Windows service still need validation on the target environment.
+Console behavior and execution as an installed Windows service have been checked locally. IDE debugging remains pending; see Step 4 below for installation scope and validation.
+
+## Install the monitor as a Windows service (Step 4)
+
+Publish with the .NET 10 SDK from the repository root:
+
+```powershell
+.\scripts\publish-monitor.ps1
+```
+
+This produces a framework-dependent Windows x64 executable at `artifacts/HelloWorldMonitor/win-x64/HelloWorldMonitor.exe`. Keep the whole published directory; the target needs the .NET 10 x64 runtime. Use `-OutputDir` to choose another publish directory.
+
+Then open **64-bit Windows PowerShell 5.1 as Administrator** and run:
+
+```powershell
+.\scripts\deploy-monitor.ps1 -MonitorUrl 'https://localhost:8443/api/'
+```
+
+The URL must return HTTP 200 directly. The monitor does not follow redirects, so the IIS HTTP URL that returns 307 is unsuitable. For HTTPS, configure a certificate trusted by the service account before starting the service; the development self-signed certificate is not trusted automatically. The script does not bypass TLS validation.
+
+The deployment copies the publish directory to `C:\Program Files\HelloWorldMonitor`, registers `HelloWorldMonitor` pointing directly to the quoted `.exe` path, sets Automatic startup and starts it. `status.log` is written beside the executable. Optional `-PublishDir` and `-DeploymentDir` parameters override the source and destination directories.
+
+This initial installer uses **LocalSystem**, the Windows service default. Deployment under a specified user and 300-second recovery are separate, unfinished Step 4 tasks. An existing service or nonempty destination is rejected without overwriting it; in-place updates are not implemented. If startup fails, the installed service is retained for diagnosis; inspect `status.log` and the target URL/certificate.
+
+```powershell
+Get-Service HelloWorldMonitor
+Get-CimInstance Win32_Service -Filter "Name='HelloWorldMonitor'" |
+    Select-Object Name, State, StartMode, PathName, StartName
+Get-Content 'C:\Program Files\HelloWorldMonitor\status.log' -Tail 10
+```
+
+Implementation and validation status: [Step 4 checklist](docs/requirements-criteria/step4.md).
