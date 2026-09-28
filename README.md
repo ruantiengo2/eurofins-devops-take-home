@@ -73,14 +73,21 @@ This produces a framework-dependent Windows x64 executable at `artifacts/HelloWo
 Then open **64-bit Windows PowerShell 5.1 as Administrator** and run:
 
 ```powershell
-.\scripts\deploy-monitor.ps1 -MonitorUrl 'https://localhost:8443/api/'
+$credential = Get-Credential -UserName "$env:COMPUTERNAME\HelloWorldUser" -Message 'Existing account for the monitor service'
+.\scripts\deploy-monitor.ps1 -MonitorUrl 'https://localhost:8443/api/' -Credential $credential
 ```
 
 The URL must return HTTP 200 directly. The monitor does not follow redirects, so the IIS HTTP URL that returns 307 is unsuitable. For HTTPS, configure a certificate trusted by the service account before starting the service; the development self-signed certificate is not trusted automatically. The script does not bypass TLS validation.
 
 The deployment copies the publish directory to `C:\Program Files\HelloWorldMonitor`, registers `HelloWorldMonitor` pointing directly to the quoted `.exe` path, sets Automatic startup and starts it. `status.log` is written beside the executable. Optional `-PublishDir` and `-DeploymentDir` parameters override the source and destination directories.
 
-This initial installer uses **LocalSystem**, the Windows service default. Deployment under a specified user and 300-second recovery are separate, unfinished Step 4 tasks. An existing service or nonempty destination is rejected without overwriting it; in-place updates are not implemented. If startup fails, the installed service is retained for diagnosis; inspect `status.log` and the target URL/certificate.
+Use an existing enabled local or domain account. The mandatory `-Credential` parameter accepts a `PSCredential` from `Get-Credential`; the password is passed directly to Windows service registration and is not written to a file, command-line argument or source control. Windows stores the service credential. Do not put a plaintext password into a script.
+
+The installer grants `SeServiceLogonRight` to that account through the local Windows LSA API without replacing other policy assignments. Keep `scripts/ServiceLogonRight.cs` beside the deployment script. Domain policy or a deny-logon policy can override this grant; resolve those policies if startup reports a logon failure.
+
+The fresh deployment directory gives Administrators and SYSTEM full control and the service account inherited read/execute access. The installer pre-creates `status.log` and grants the account Modify on that file only, so logging does not require write access to the application binaries. It also registers the monitor's Windows Event Log source while elevated.
+
+Recovery after 300 seconds remains a separate, unfinished Step 4 task. An existing service or nonempty destination is rejected without overwriting it; in-place updates are not implemented. If startup fails, the installed service and assigned rights are retained for diagnosis; inspect `status.log`, the target URL/certificate and account credentials. Removing the service does not automatically revoke account rights; review them when decommissioning a dedicated account.
 
 ```powershell
 Get-Service HelloWorldMonitor

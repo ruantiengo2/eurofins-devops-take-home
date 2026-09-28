@@ -10,9 +10,9 @@
 
 ## Service account and permissions
 
-- [ ] Configure the service to run as a specified user.
-- [ ] Supply the account password securely without storing it in source control.
-- [ ] Ensure the account can log on as a service, execute the monitor and write its log beside the executable.
+- [x] Configure the service to run as a specified user.
+- [x] Supply the account password securely without storing it in source control.
+- [x] Ensure the account can log on as a service, execute the monitor and write its log beside the executable.
 
 ## Error recovery
 
@@ -21,7 +21,7 @@
 
 ## Completion criteria
 
-- [ ] Verify that the installed service starts successfully under the specified user.
+- [x] Verify that the installed service starts successfully under the specified user.
 - [ ] Verify that the service logs the HelloWorld website HTTP status every 60 seconds.
 - [ ] Verify that an HTTP response other than 200 is logged and stops the service.
 - [ ] Verify that Windows restarts the failed service after 300 seconds.
@@ -35,7 +35,7 @@
 
 The deployment, account, startup and 300-second recovery requirements come from Step 4 of the [assignment](<../DevOpsEngenieerTakeHome - Ram. Team 1 (1).pdf>). Secure credential handling, repeatable deployment and the documentation checks support those requirements.
 
-The five deployment-script items are implemented by scripts/publish-monitor.ps1 and scripts/deploy-monitor.ps1. The remaining items are pending. This initial installer uses LocalSystem and does not configure a specified user or recovery actions.
+Deployment and service-account setup are implemented by scripts/publish-monitor.ps1, scripts/deploy-monitor.ps1 and scripts/ServiceLogonRight.cs. Recovery actions and the unchecked validation items remain pending.
 
 ## Deployment validation
 
@@ -49,4 +49,16 @@ Validated on Windows 11 with Windows PowerShell 5.1, SDK 10.0.401 and runtime 10
 - Confirmed an existing service is rejected without replacing it or restarting its process.
 - Removed the temporary test service after validation.
 
-This test does not claim that the current IIS URL/certificate configuration, a specified service account or 300-second recovery is ready. See the README for installation prerequisites and parameters.
+The initial deployment test used LocalSystem. The additional account validation below covers deployment under a specified user. The current IIS URL/certificate configuration and 300-second recovery remain pending. See the README for installation prerequisites and parameters.
+## Service-account validation
+
+A fresh Windows deployment was tested with a temporary, non-administrator local account and a random password held only in memory:
+
+- The installed service identity and the actual worker process owner matched the supplied account.
+- The service started with Automatic startup and logged HTTP 200 beside its executable.
+- Local policy contained SeServiceLogonRight for the account; granting it again succeeded.
+- The executable granted the account read/execute without write access; status.log granted Modify.
+- The same unprivileged service appended an HTTP 503 result and stopped, exercising error logging.
+- All 11 checks passed; the temporary service, account and test logon-right assignment were removed afterward.
+
+The deployment passes PSCredential directly to New-Service without converting its password to plaintext in script code. The caller should use Get-Credential as documented; no credential files or password arguments are required.
