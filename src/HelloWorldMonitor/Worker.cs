@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.Hosting.WindowsServices;
 
 namespace HelloWorldMonitor;
 
@@ -21,6 +22,12 @@ public class Worker(
             {
                 if (!await CheckWebsiteAsync(stoppingToken))
                 {
+                    // The result has already been appended and closed by WriteLogAsync.
+                    // StopApplication alone reports a normal service stop to Windows.
+                    if (WindowsServiceHelpers.IsWindowsService())
+                    {
+                        Environment.Exit(1);
+                    }
                     Environment.ExitCode = 1;
                     lifetime.StopApplication();
                     return;
