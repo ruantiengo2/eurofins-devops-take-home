@@ -91,8 +91,8 @@ jobs:
           bash scripts/test-container.sh "$DIGEST"
           {
             echo "### Published and validated image"
-            echo "- Tag: `$IMAGE:$TAG`"
-            echo "- Digest: `$DIGEST`"
+            printf -- '- Tag: `%s`\n' "$IMAGE:$TAG"
+            printf -- '- Digest: `%s`\n' "$DIGEST"
             echo "- Container port: 8080 (HTTP)"
             echo "- GET /: HTTP 200, Hello World!"
             echo "- GET /health: HTTP 200, Healthy"
