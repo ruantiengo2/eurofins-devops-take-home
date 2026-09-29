@@ -87,13 +87,19 @@ The installer grants `SeServiceLogonRight` to that account through the local Win
 
 The fresh deployment directory gives Administrators and SYSTEM full control and the service account inherited read/execute access. The installer pre-creates `status.log` and grants the account Modify on that file only, so logging does not require write access to the application binaries. It also registers the monitor's Windows Event Log source while elevated.
 
-Recovery after 300 seconds remains a separate, unfinished Step 4 task. An existing service or nonempty destination is rejected without overwriting it; in-place updates are not implemented. If startup fails, the installed service and assigned rights are retained for diagnosis; inspect `status.log`, the target URL/certificate and account credentials. Removing the service does not automatically revoke account rights; review them when decommissioning a dedicated account.
+The installer configures the first, second and subsequent failures to restart the service after **300 seconds** (300000 milliseconds), with the failure count reset after 24 hours without failures. The monitor finishes writing the failure to `status.log` before exiting with code 1. When hosted as a Windows service it terminates the process so the Service Control Manager recognizes the failure and performs recovery; console execution still uses normal host shutdown with exit code 1. An intentional `Stop-Service` uses normal cancellation, not this failure-exit path.
+
+An existing service or nonempty destination is rejected without overwriting it; in-place updates are not implemented. If startup fails, the installed service, recovery configuration and assigned rights are retained for diagnosis; inspect `status.log`, the target URL/certificate and account credentials. Disable the service while diagnosing if automatic retries are unwanted. Removing the service does not automatically revoke account rights; review them when decommissioning a dedicated account.
 
 ```powershell
 Get-Service HelloWorldMonitor
 Get-CimInstance Win32_Service -Filter "Name='HelloWorldMonitor'" |
     Select-Object Name, State, StartMode, PathName, StartName
 Get-Content 'C:\Program Files\HelloWorldMonitor\status.log' -Tail 10
+sc.exe qfailure HelloWorldMonitor
+sc.exe qfailureflag HelloWorldMonitor
 ```
+
+For an end-to-end recovery check, first observe two healthy IIS log entries 60 seconds apart. Make the monitored endpoint return a non-200 response, confirm the result is logged and the monitor stops, then restore the endpoint. Do not manually start the monitor: Windows should restart it after 300 seconds and a new HTTP 200 entry should appear. Service-hosted failure handling follows [Microsoft's Windows service recovery guidance](https://learn.microsoft.com/en-us/dotnet/core/extensions/windows-service#service-recovery-options-and-net-backgroundservice-instances).
 
 Implementation and validation status: [Step 4 checklist](docs/requirements-criteria/step4.md).
