@@ -133,3 +133,37 @@ CI authenticates with the short-lived `GITHUB_TOKEN` and job-scoped `packages: w
 CI retains the solution build, integration tests and downloadable `HelloWorldApi` package. The image job waits for those checks, builds the image, verifies both endpoint status codes and bodies, publishes both tags, pulls the commit tag and runs the pulled digest through the same checks. Build, push, pull or smoke-test errors fail the workflow. On Linux with Docker and curl, repeat the smoke test with `bash scripts/test-container.sh IMAGE_REFERENCE`.
 
 Validation evidence and completion status: [Step 5 checklist](docs/requirements-criteria/step5.md).
+
+## Deploy to Docker Engine (Step 6)
+
+Run `scripts/deploy-docker.ps1` in Windows PowerShell 5.1 or PowerShell 7 on Windows, or PowerShell 7 on Linux. Install Docker CLI and start a **Linux container engine** accessible to your user. On Windows, Docker Desktop must use Linux containers; a Windows-only container engine cannot run the Step 5 image. The script uses the current Docker context, so confirm its target with `docker context show` before deployment.
+
+For private GHCR images, first run `docker login ghcr.io -u YOUR_GITHUB_USERNAME` and enter a token with `read:packages` and package access at the password prompt. Public pulls need no login. Use Docker's credential store/helper; never put passwords or tokens in the script or repository. The script uses your existing Docker authentication.
+
+From the repository root:
+
+```powershell
+# Replace the tag with an image actually published by a successful Step 5 run.
+./scripts/deploy-docker.ps1 -Image 'ghcr.io/ruantiengo/eurofins-devops-takehome:sha-FULL_COMMIT_SHA' -HostPort 18080
+# A full repository@sha256:digest reference is also accepted.
+# When the application image is unavailable, explicitly use the assignment alternative:
+./scripts/deploy-docker.ps1 -UseHelloWorld
+```
+
+Parameters: `-Image` defaults to `ghcr.io/ruantiengo/eurofins-devops-takehome:latest`; `-ContainerName` defaults to `helloworld-api`; `-HostPort` defaults to 18080 and maps to container port 8080. `-UseHelloWorld` selects `hello-world:latest` and defaults the name to `helloworld-example`; it cannot be combined with `-Image`. Official `hello-world` references supplied through `-Image` are also recognized.
+
+The script checks engine access and Linux mode, rejects an existing container name, pulls the image, then creates and starts the container. It does not silently fall back after a failed application pull. The web container stays detached; the script checks its running state after two seconds. Port publication uses all host interfaces; host firewall/network policy controls external access. On the Docker host, validate `http://localhost:18080/` and `http://localhost:18080/health` (adjust for `-HostPort`). Running state alone does not verify HTTP readiness.
+
+The official example has no web server: no port is published, and the script waits up to 30 seconds for exit code 0 and checks for `Hello from Docker!` in its logs. The stopped example container is retained.
+
+An existing name is rejected without replacement. Choose another name or inspect and explicitly remove the old container. Failures return a script error; any created container is kept for diagnosis. No unrelated containers are removed:
+
+```powershell
+docker logs helloworld-api
+docker stop helloworld-api
+docker rm helloworld-api
+# Remove the completed alternative example:
+docker rm helloworld-example
+```
+
+Implementation and validation status: [Step 6 checklist](docs/requirements-criteria/step6.md).
