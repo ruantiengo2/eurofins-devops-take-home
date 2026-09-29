@@ -103,3 +103,33 @@ sc.exe qfailureflag HelloWorldMonitor
 For an end-to-end recovery check, first observe two healthy IIS log entries 60 seconds apart. Make the monitored endpoint return a non-200 response, confirm the result is logged and the monitor stops, then restore the endpoint. Do not manually start the monitor: Windows should restart it after 300 seconds and a new HTTP 200 entry should appear. Service-hosted failure handling follows [Microsoft's Windows service recovery guidance](https://learn.microsoft.com/en-us/dotnet/core/extensions/windows-service#service-recovery-options-and-net-backgroundservice-instances).
 
 Implementation and validation status: [Step 4 checklist](docs/requirements-criteria/step4.md).
+
+## Docker image (Step 5)
+
+The pipeline targets the Linux amd64 image at `ghcr.io/ruantiengo/eurofins-devops-takehome`. Each successful main CI publication pushes `sha-<full-commit-SHA>` and updates `latest`. Use the commit tag or the digest recorded in the CI image job summary for reproducible deployment; `latest` moves. Pull requests build and test the image without publishing.
+
+The multi-stage Dockerfile publishes the API with the .NET 10 SDK and ships the ASP.NET Core 10 runtime. It runs as the image's non-root app user and listens on **HTTP port 8080**. Its routes are `/` and `/health`; the IIS `/api` prefix does not apply. TLS should be terminated by the hosting platform or reverse proxy.
+
+Install Docker Engine, or Docker Desktop using **Linux containers** on Windows. From the repository root:
+
+```sh
+docker build --pull -t helloworld-api:local .
+docker run --rm --name helloworld-api -p 8080:8080 helloworld-api:local
+```
+
+In another terminal, check `http://localhost:8080/` (HTTP 200, `Hello World!`) and `http://localhost:8080/health` (HTTP 200, `Healthy`). Choose another host port, such as `-p 18080:8080`, if IIS already uses 8080.
+
+To run a published version, replace the example tag with a full commit SHA from a successful CI run:
+
+```sh
+docker pull ghcr.io/ruantiengo/eurofins-devops-takehome:sha-<full-commit-SHA>
+docker run --rm -p 18080:8080 ghcr.io/ruantiengo/eurofins-devops-takehome:sha-<full-commit-SHA>
+```
+
+GHCR packages are private by default. Private pulls require an account with package read access and a personal access token (classic) with `read:packages`; use `docker login ghcr.io -u YOUR_GITHUB_USERNAME` and enter the token at the password prompt. Never put tokens in files or commit them. Public packages allow anonymous pulls. The owner can manage visibility and access in the GitHub package settings.
+
+CI authenticates with the short-lived `GITHUB_TOKEN` and job-scoped `packages: write`; no personal token or registry password is stored in source control. The package is associated with this repository through its OCI source label. Repository or organization policy must allow package creation and workflow writes; an existing package must grant this repository Actions access.
+
+CI retains the solution build, integration tests and downloadable `HelloWorldApi` package. The image job waits for those checks, builds the image, verifies both endpoint status codes and bodies, publishes both tags, pulls the commit tag and runs the pulled digest through the same checks. Build, push, pull or smoke-test errors fail the workflow. On Linux with Docker and curl, repeat the smoke test with `bash scripts/test-container.sh IMAGE_REFERENCE`.
+
+Validation evidence and completion status: [Step 5 checklist](docs/requirements-criteria/step5.md).
