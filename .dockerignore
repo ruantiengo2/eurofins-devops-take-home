@@ -1,0 +1,7 @@
+**
+!src/
+!src/HelloWorldApi/
+!src/HelloWorldApi/**
+src/HelloWorldApi/bin/
+src/HelloWorldApi/obj/
+src/HelloWorldApi/Properties/
