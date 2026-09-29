@@ -39,3 +39,66 @@ jobs:
           name: HelloWorldApi
           path: artifacts/HelloWorldApi/
           if-no-files-found: error
+
+  image:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: image-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set image name and immutable commit tag
+        shell: bash
+        run: |
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+          echo "TAG=sha-$GITHUB_SHA" >> "$GITHUB_ENV"
+
+      - name: Build image
+        run: |
+          docker build --pull \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag "$IMAGE:$TAG" .
+
+      - name: Test built image
+        run: bash scripts/test-container.sh "$IMAGE:$TAG"
+
+      - name: Authenticate to GitHub Container Registry
+        if: github.event_name == 'push'
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Publish commit tag and latest
+        if: github.event_name == 'push'
+        run: |
+          docker push "$IMAGE:$TAG"
+          docker tag "$IMAGE:$TAG" "$IMAGE:latest"
+          docker push "$IMAGE:latest"
+
+      - name: Pull published image and test by digest
+        if: github.event_name == 'push'
+        run: |
+          docker image rm "$IMAGE:$TAG" "$IMAGE:latest"
+          docker pull "$IMAGE:$TAG"
+          DIGEST=$(docker image inspect "$IMAGE:$TAG" --format '{{index .RepoDigests 0}}')
+          bash scripts/test-container.sh "$DIGEST"
+          {
+            echo "### Published and validated image"
+            echo "- Tag: `$IMAGE:$TAG`"
+            echo "- Digest: `$DIGEST`"
+            echo "- Container port: 8080 (HTTP)"
+            echo "- GET /: HTTP 200, Hello World!"
+            echo "- GET /health: HTTP 200, Healthy"
+            echo "- Step 1 package: HelloWorldApi artifact in this run"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out of registry
+        if: always() && github.event_name == 'push'
+        run: docker logout ghcr.io
