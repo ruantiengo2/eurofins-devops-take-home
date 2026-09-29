@@ -82,6 +82,12 @@ $binaryPath = '"{0}" --Monitor:Url "{1}"' -f $executable, $MonitorUrl.AbsoluteUr
 
 # The password remains in PSCredential; Windows stores the service credential.
 New-Service -Name $serviceName -DisplayName $serviceName -BinaryPathName $binaryPath -StartupType Automatic -Credential $serviceCredential -Description 'Checks the HelloWorld website every 60 seconds.' | Out-Null
+# SC uses milliseconds. The last action repeats for subsequent failures.
+$sc = Join-Path $env:SystemRoot 'System32/sc.exe'
+& $sc failure $serviceName reset= 86400 actions= restart/300000/restart/300000/restart/300000
+if ($LASTEXITCODE -ne 0) { throw "Configuring service recovery failed: $LASTEXITCODE" }
+& $sc failureflag $serviceName 1
+if ($LASTEXITCODE -ne 0) { throw "Enabling recovery for non-crash failures failed: $LASTEXITCODE" }
 try {
     Start-Service -Name $serviceName
     (Get-Service -Name $serviceName).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))
