@@ -1,5 +1,7 @@
 # Step 5 - Docker Image Checklist (Optional)
 
+Status: **9 of 17 items complete**. Checked items cover implemented configuration and documentation. The remaining 8 items require an actual image build, publication or successful runtime/CI evidence.
+
 ## Application image
 
 - [x] Add a Dockerfile for the HelloWorld web application from Step 1.
@@ -38,10 +40,10 @@ Docker packaging, registry publication steps and automated container checks are 
 
 ## Validation evidence
 
-Attempted CI run: [CI #14](https://github.com/ruantiengo/eurofins-devops-takehome/actions/runs/36646225065), commit `15d0bd0902404174d207f54533167b94e42e85b2`.
+Attempted CI run: [CI #15](https://github.com/ruantiengo/eurofins-devops-takehome/actions/runs/36646362338), commit `03e5e7998128a814263e1bfb0c5ccd51b9013e8e`.
 
 GitHub reported: "The job was not started because your account is locked due to a billing issue." The build job executed no steps and the image job was skipped. This is not a successful build or publication; no validated image tag or digest is available from this run. Docker is also unavailable on the local Windows validation machine.
 
-After the account owner resolves the GitHub billing lock, rerun CI and verify both jobs succeed, the `HelloWorldApi` artifact is downloadable, and the image job summary records the published digest and successful endpoint checks. The intended tag for the run above is `ghcr.io/ruantiengo/eurofins-devops-takehome:sha-15d0bd0902404174d207f54533167b94e42e85b2`; its existence has not been verified.
+After the account owner resolves the GitHub billing lock, rerun CI and verify both jobs succeed, the `HelloWorldApi` artifact is downloadable, and the image job summary records the published digest and successful endpoint checks. The intended tag for the run above is `ghcr.io/ruantiengo/eurofins-devops-takehome:sha-03e5e7998128a814263e1bfb0c5ccd51b9013e8e`; its existence has not been verified.
 
 See the [README](../../README.md#docker-image-step-5) for registry access, tags, container port and local build/run commands.
