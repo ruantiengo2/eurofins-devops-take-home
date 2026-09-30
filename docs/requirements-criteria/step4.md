@@ -28,7 +28,7 @@
 
 ## Supporting validation and documentation
 
-- [ ] Configure a monitored URL that returns HTTP 200 when the IIS application is healthy; account for HTTP-to-HTTPS redirects and certificate trust for the service account.
+- [x] Configure a monitored URL that returns HTTP 200 when the IIS application is healthy; account for HTTP-to-HTTPS redirects and certificate trust for the service account.
 - [ ] Verify that rerunning the deployment script updates the existing service without creating duplicates.
 - [x] Document prerequisites, script parameters, account permissions, deployment commands and recovery settings.
 - [x] Record evidence of service identity, Automatic startup, recovery configuration, periodic logs, failure and restart timing.
@@ -75,3 +75,8 @@ Validated with the published Windows executable under a temporary non-administra
 - Console regression still logged HTTP 503 and exited with code 1. Both existing API integration tests passed.
 
 The test temporarily trusted the IIS localhost certificate in the machine certificate store so the service account could validate TLS. The temporary trust, service, account and account logon right were removed afterward, and the IIS application pool was left running. Persistent endpoint/certificate provisioning remains an operational prerequisite.
+## Checklist review
+
+The monitored URL requirement was exercised by the recorded real service recovery test: `https://localhost:8443/api/` returned 200 and the machine trusted the exact localhost certificate during the test, making trust available to the specified service account. Temporary trust was removed during cleanup; a persistent installation must provision its own certificate trust.
+
+Updating an existing service remains unchecked. The installer explicitly rejects an existing `HelloWorldMonitor` service before modifying it. Earlier Windows tests verified this rejection; it does not implement an in-place update.

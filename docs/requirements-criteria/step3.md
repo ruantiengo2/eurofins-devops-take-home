@@ -27,4 +27,4 @@
 - [x] Verify that the log is created beside the executable, regardless of the working directory.
 - [x] Document the monitored URL, log location, and how to run the application locally.
 
-Local console validation (`dotnet run`) confirmed HTTP 200 log entries 60 seconds apart, and logging followed by exit code 1 for HTTP 404, connection refusal, and timeout. The two IDE checks above and execution as an installed Windows service remain pending.
+Local console validation (`dotnet run`) confirmed HTTP 200 log entries 60 seconds apart, and logging followed by exit code 1 for HTTP 404, connection refusal, and timeout. The two IDE checks above remain pending: console and Windows Service tests do not establish IDE debugger behavior. Execution as an installed Windows service was subsequently validated in Step 4, including periodic logging, failure and recovery.

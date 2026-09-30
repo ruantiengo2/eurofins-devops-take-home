@@ -106,7 +106,7 @@ Implementation and validation status: [Step 4 checklist](docs/requirements-crite
 
 ## Docker image (Step 5)
 
-The pipeline targets the Linux amd64 image at `ghcr.io/ruantiengo/eurofins-devops-takehome`. Each successful main CI publication pushes `sha-<full-commit-SHA>` and updates `latest`. Use the commit tag or the digest recorded in the CI image job summary for reproducible deployment; `latest` moves. Pull requests build and test the image without publishing.
+The pipeline targets the Linux amd64 image at `ghcr.io/ruantiengo2/eurofins-devops-take-home`. Each successful main CI publication pushes `sha-<full-commit-SHA>` and updates `latest`. Use the commit tag or the digest recorded in the CI image job summary for reproducible deployment; `latest` moves. Pull requests build and test the image without publishing.
 
 The multi-stage Dockerfile publishes the API with the .NET 10 SDK and ships the ASP.NET Core 10 runtime. It runs as the image's non-root app user and listens on **HTTP port 8080**. Its routes are `/` and `/health`; the IIS `/api` prefix does not apply. TLS should be terminated by the hosting platform or reverse proxy.
 
@@ -122,8 +122,8 @@ In another terminal, check `http://localhost:8080/` (HTTP 200, `Hello World!`) a
 To run a published version, replace the example tag with a full commit SHA from a successful CI run:
 
 ```sh
-docker pull ghcr.io/ruantiengo/eurofins-devops-takehome:sha-<full-commit-SHA>
-docker run --rm -p 18080:8080 ghcr.io/ruantiengo/eurofins-devops-takehome:sha-<full-commit-SHA>
+docker pull ghcr.io/ruantiengo2/eurofins-devops-take-home:sha-<full-commit-SHA>
+docker run --rm -p 18080:8080 ghcr.io/ruantiengo2/eurofins-devops-take-home:sha-<full-commit-SHA>
 ```
 
 GHCR packages are private by default. Private pulls require an account with package read access and a personal access token (classic) with `read:packages`; use `docker login ghcr.io -u YOUR_GITHUB_USERNAME` and enter the token at the password prompt. Never put tokens in files or commit them. Public packages allow anonymous pulls. The owner can manage visibility and access in the GitHub package settings.
@@ -144,13 +144,13 @@ From the repository root:
 
 ```powershell
 # Replace the tag with an image actually published by a successful Step 5 run.
-./scripts/deploy-docker.ps1 -Image 'ghcr.io/ruantiengo/eurofins-devops-takehome:sha-FULL_COMMIT_SHA' -HostPort 18080
+./scripts/deploy-docker.ps1 -Image 'ghcr.io/ruantiengo2/eurofins-devops-take-home:sha-FULL_COMMIT_SHA' -HostPort 18080
 # A full repository@sha256:digest reference is also accepted.
 # When the application image is unavailable, explicitly use the assignment alternative:
 ./scripts/deploy-docker.ps1 -UseHelloWorld
 ```
 
-Parameters: `-Image` defaults to `ghcr.io/ruantiengo/eurofins-devops-takehome:latest`; `-ContainerName` defaults to `helloworld-api`; `-HostPort` defaults to 18080 and maps to container port 8080. `-UseHelloWorld` selects `hello-world:latest` and defaults the name to `helloworld-example`; it cannot be combined with `-Image`. Official `hello-world` references supplied through `-Image` are also recognized.
+Parameters: `-Image` defaults to `ghcr.io/ruantiengo2/eurofins-devops-take-home:latest`; `-ContainerName` defaults to `helloworld-api`; `-HostPort` defaults to 18080 and maps to container port 8080. `-UseHelloWorld` selects `hello-world:latest` and defaults the name to `helloworld-example`; it cannot be combined with `-Image`. Official `hello-world` references supplied through `-Image` are also recognized.
 
 The script checks engine access and Linux mode, rejects an existing container name, pulls the image, then creates and starts the container. It does not silently fall back after a failed application pull. The web container stays detached; the script checks its running state after two seconds. Port publication uses all host interfaces; host firewall/network policy controls external access. On the Docker host, validate `http://localhost:18080/` and `http://localhost:18080/health` (adjust for `-HostPort`). Running state alone does not verify HTTP readiness.
 
@@ -167,3 +167,19 @@ docker rm helloworld-example
 ```
 
 Implementation and validation status: [Step 6 checklist](docs/requirements-criteria/step6.md).
+
+## IIS deployment (Step 2)
+
+Use 64-bit Windows PowerShell 5.1 as Administrator on Windows with IIS, its WebAdministration management module, and the .NET 10 Hosting Bundle installed. If IIS was installed after the Hosting Bundle, repair the bundle to register AspNetCoreModuleV2. Create or select an enabled local account before deployment.
+
+Download the HelloWorldApi ZIP from a successful CI run and save it as `artifacts/HelloWorldApi.zip` in the repository. The ZIP must contain the published files at its root. Run:
+
+```powershell
+./scripts/deployment-script.ps1
+```
+
+The entry script has no command-line parameters. Its configuration variables select `HelloWorldUser`, `HelloWorldApiUsers` and `C:\inetpub\HelloWorldApi`; it prompts for the account password as a SecureString. The called `configure-iis.ps1` accepts `-DeploymentDir` and `-Credential` and configures site `HelloWorldApi`, pool `HelloWorldApiPool`, application `/api`, HTTP 8080, HTTPS 8443 and logs under `C:\inetpub\logs\HelloWorldApi`.
+
+Use `http://localhost:8080/api/` in a browser; it redirects to `https://localhost:8443/api/`. The corresponding health endpoint is `/api/health`. The generated localhost certificate requires explicit trust for clients; the deployment does not establish trust. For monitoring, use the HTTPS URL with certificate trust for the service account, because the monitor does not follow HTTP redirects.
+
+Redeployment stops an existing running pool and waits up to 60 seconds for files to be released before extraction. It restores an originally running pool in `finally`; an already stopped pool stays stopped. This incurs brief downtime and does not provide rollback or concurrent deployment locking. The correction from the original PR #1 is included in this repository.
