@@ -46,6 +46,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: read
     concurrency:
       group: image-${{ github.ref }}
       cancel-in-progress: false
@@ -98,6 +99,21 @@ jobs:
             echo "- GET /health: HTTP 200, Healthy"
             echo "- Step 1 package: HelloWorldApi artifact in this run"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Download and validate application artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --name HelloWorldApi --dir downloaded-package
+          for file in HelloWorldApi.dll HelloWorldApi.deps.json HelloWorldApi.runtimeconfig.json web.config appsettings.json; do
+            test -s "downloaded-package/$file"
+          done
+          echo 'PASS downloaded application ZIP contains required deployment files'
+
+      - name: Validate deployment script on Docker Engine
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: ./scripts/test-docker-deployment.ps1 -Image "${env:IMAGE}:${env:TAG}"
 
       - name: Log out of registry
         if: always() && github.event_name == 'push'

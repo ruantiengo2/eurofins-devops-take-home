@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^[^\s-][^\s]*$')]
-    [string]$Image = 'ghcr.io/ruantiengo/eurofins-devops-takehome:latest',
+    [string]$Image = 'ghcr.io/ruantiengo2/eurofins-devops-take-home:latest',
     [ValidatePattern('^[a-zA-Z0-9][a-zA-Z0-9_.-]*$')]
     [string]$ContainerName = 'helloworld-api',
     [ValidateRange(1, 65535)]
