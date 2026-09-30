@@ -59,24 +59,69 @@ $credential = [System.Management.Automation.PSCredential]::new(
     "$env:COMPUTERNAME\$userName", $password
 )
 
-Expand-Archive -LiteralPath $packagePath -DestinationPath $deploymentDir -Force
+$appPoolName = 'HelloWorldApiPool'
+$restartPool = $false
+try {
+    # In-process IIS hosting locks the deployed DLLs until the worker exits.
+    if (Test-Path "IIS:\AppPools\$appPoolName") {
+        $poolState = (Get-WebAppPoolState -Name $appPoolName).Value
+        if ($poolState -notin @('Started', 'Stopped')) {
+            throw "Application pool is transitioning ($poolState). Retry when it is stable."
+        }
+        if ($poolState -eq 'Started') {
+            $restartPool = $true
+            Stop-WebAppPool -Name $appPoolName
+        }
 
-# Reuse the group if it already exists.
-$group = Get-LocalGroup -Name $groupName -ErrorAction SilentlyContinue
-if (-not $group) {
-    $group = New-LocalGroup -Name $groupName -Description 'Read and execute access to HelloWorldApi'
+        # Stopped state alone does not guarantee that the worker released files.
+        $deadline = (Get-Date).AddSeconds(60)
+        do {
+            $filesReleased = (Get-WebAppPoolState -Name $appPoolName).Value -eq 'Stopped'
+            if ($filesReleased -and (Test-Path -LiteralPath $deploymentDir)) {
+                foreach ($file in Get-ChildItem -LiteralPath $deploymentDir -File -Recurse) {
+                    $handle = $null
+                    try {
+                        $handle = [IO.File]::Open($file.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
+                    } catch [IO.IOException] {
+                        $filesReleased = $false
+                        break
+                    } finally {
+                        if ($handle) { $handle.Dispose() }
+                    }
+                }
+            }
+            if ($filesReleased) { break }
+            if ((Get-Date) -ge $deadline) {
+                throw 'Timed out waiting for the application pool to release deployment files. No package files were changed.'
+            }
+            Start-Sleep -Milliseconds 500
+        } while ($true)
+    }
+
+    Expand-Archive -LiteralPath $packagePath -DestinationPath $deploymentDir -Force
+
+    # Reuse the group if it already exists.
+    $group = Get-LocalGroup -Name $groupName -ErrorAction SilentlyContinue
+    if (-not $group) {
+        $group = New-LocalGroup -Name $groupName -Description 'Read and execute access to HelloWorldApi'
+    }
+
+    $members = Get-LocalGroupMember -Group $groupName
+    if ($user.SID.Value -notin $members.SID.Value) {
+        Add-LocalGroupMember -Group $groupName -Member $user
+    }
+
+    # RX = read and execute; OI/CI = inherit on files and subdirectories.
+    $permission = "*$($group.SID.Value):(OI)(CI)(RX)"
+    icacls.exe $deploymentDir /grant:r $permission /T
+    if ($LASTEXITCODE -ne 0) { throw "Setting deployment permissions failed: $LASTEXITCODE" }
+
+    Write-Host "Application files extracted to $deploymentDir"
+
+    & (Join-Path $PSScriptRoot 'configure-iis.ps1') -DeploymentDir $deploymentDir -Credential $credential
+} finally {
+    # Restore an originally running pool even if extraction/configuration fails.
+    if ($restartPool -and (Get-WebAppPoolState -Name $appPoolName).Value -eq 'Stopped') {
+        Start-WebAppPool -Name $appPoolName
+    }
 }
-
-$members = Get-LocalGroupMember -Group $groupName
-if ($user.SID.Value -notin $members.SID.Value) {
-    Add-LocalGroupMember -Group $groupName -Member $user
-}
-
-# RX = read and execute; OI/CI = inherit on files and subdirectories.
-$permission = "*$($group.SID.Value):(OI)(CI)(RX)"
-icacls.exe $deploymentDir /grant:r $permission /T
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-Write-Host "Application files extracted to $deploymentDir"
-
-& (Join-Path $PSScriptRoot 'configure-iis.ps1') -DeploymentDir $deploymentDir -Credential $credential
